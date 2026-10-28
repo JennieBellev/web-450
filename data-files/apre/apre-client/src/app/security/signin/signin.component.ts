@@ -1,3 +1,22 @@
+/**
+ * Author: Professor Krasso / Modified by Jennifer (Jennie) Snyder
+ * Date: 28 October 2026
+ * File: signin.component.ts
+ * Description: Sign-in component for the APRE (Agent Performance and Reporting Engine) application.
+ *
+ * ============================================================================
+ * JENNIE'S WEEK 2 (ASSIGNMENT 2.1) MINOR DEVELOPMENT TASK SUMMARY — TASK m-028
+ * ============================================================================
+ * WHAT CHANGED:
+ * Added the HTML attribute `placeholder="Enter your username"` directly to the
+ * `#username` text input element inside the inline component template.
+ *
+ * WHY IT CHANGED:
+ * Per APRE Minor Task m-028, the original username input field rendered as an
+ * empty white box with zero inline guidance for the user. Adding the explicit
+ * "Enter your username" placeholder improves form usability, visual clarity,
+ * and user experience (UX) before the user even starts typing.
+ */
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
@@ -21,7 +40,8 @@ import { CookieService } from 'ngx-cookie-service';
       <form [formGroup]="signinForm" (ngSubmit)="signin();" class="signin__form">
         <div class="signin__form-group">
           <label for="username" class="signin__label">Username</label>
-          <input id="username" formControlName="username" type="text" class="signin__input" />
+          <input id="username" formControlName="username" type="text" class="signin__input" placeholder="Enter your username" />
+          <!-- Completing Task m-028 changes made by Jennie Snyder for Assignment 2.1: Added placeholder="Enter your username" to the username input field. -->
         </div>
         <div class="signin__form-group">
           <label for="password" class="signin__label">Password</label>
