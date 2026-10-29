@@ -1,8 +1,8 @@
 /**
- * Author: Professor Krasso
- * Date: 10 September 2024
+ * Author: Professor Krasso / Modified by Jennifer (Jennie) Snyder
+ * Date: 28 October 2026
  * File: index.spec.js
- * Description: Test the sales report API
+ * Description: Test the sales report API (Added 3 unit tests for Task m-065: Sales by Product)
  */
 
 // Require the modules
@@ -141,5 +141,74 @@ describe('Apre Sales Report API - Sales by Region', () => {
       status: 404,
       type: 'error'
     });
+  });
+});
+
+/**
+ * ============================================================================
+ * JENNIE'S WEEK 2 (ASSIGNMENT 2.3) SERVER UNIT TESTS — TASK M-065
+ * Testing GET /api/reports/sales/products with 3 distinct unit tests:
+ *  1. Returns 200 and aggregated sales data grouped by product
+ *  2. Returns 200 and an empty array when no product sales records exist
+ *  3. Returns 404 Not Found when requesting an invalid products sub-route
+ * ============================================================================
+ */
+describe('Apre Sales Report API - Sales by Product (Task M-065)', () => {
+  beforeEach(() => {
+    mongo.mockClear();
+  });
+
+  // Unit Test 1: Successfully fetches aggregated sales date by product
+  it('should fetch aggregated sales data grouped by product', async () => {
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([
+            { product: 'Laptop', totalSales: 5000 },
+            { product: 'Smartphone', totalSales: 3200 }
+          ])
+        })
+      };
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/sales/products'); // Send a GET request to the sales/products endpoint
+
+    expect(response.status).toBe(200); // Expect a 200 status code
+    expect(response.body).toEqual([
+      { product: 'Laptop', totalSales: 5000 },
+      { product: 'Smartphone', totalSales: 3200 }
+    ]); // Expect the response body to match the expected data
+  });
+
+  // Unit Test 2: Returns 200 and an empty array when no product sales records exist
+  it('should return 200 and an empty array if no product sales records exist', async () => {
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        })
+      };
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/sales/products'); // Send a GET request to the sales/products endpoint
+
+    expect(response.status).toBe(200); // Expect a 200 status code
+    expect(response.body).toEqual([]); // Expect the response body to be an empty array
+  });
+
+  // Unit Test 3: Returns 404 Not Found when requesting an invalid products endpoint
+  it('should return 404 Not Found for an invalid products endpoint', async () => {
+    const response = await request(app).get('/api/reports/sales/products/invalid-endpoint'); // Send a GET request to an invalid products endpoint
+
+    expect(response.status).toBe(404); // Expect a 404 status code
+    expect(response.body).toEqual({
+      message: 'Not Found',
+      status: 404,
+      type: 'error'
+    }); // Expect the response body to match the expected error message
   });
 });
