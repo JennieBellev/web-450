@@ -1,33 +1,25 @@
 /**
+ ===========================================================================
+  // JENNIFER SNYDER'S UNIT TESTS FOR TASK M-097 (/performance-by-region-supervisor)
+  // ============================================================================
  * Author: Professor Krasso
  * Date: 10 September 2024
+ * Modified by: Jennifer Snyder
+ * Date: 11/06/2026
  * File: index.spec.js
  * Description: Test the agent performance API
  */
-
-// Require the modules
-const request = require('supertest');
-const app = require('../../../../src/app');
-const { mongo } = require('../../../../src/utils/mongo');
-
-jest.mock('../../../../src/utils/mongo');
-
-// Test the agent performance API
-describe('Apre Agent Performance API', () => {
-  beforeEach(() => {
-    mongo.mockClear();
-  });
-
-  // Test the call-duration-by-date-range endpoint
-  it('should fetch call duration data for agents within a specified date range', async () => {
+// Test 1: Successful response (200 OK) with valid query parameters
+  it('should fetch agent performance data when region and supervisorId are provided', async () => {
     mongo.mockImplementation(async (callback) => {
       const db = {
         collection: jest.fn().mockReturnThis(),
         aggregate: jest.fn().mockReturnValue({
           toArray: jest.fn().mockResolvedValue([
             {
-              agents: ['Agent A', 'Agent B'],
-              callDurations: [120, 90]
+              agent: 'Olivia Garcia',
+              callDuration: 350,
+              resolutionTime: 130
             }
           ])
         })
@@ -35,41 +27,44 @@ describe('Apre Agent Performance API', () => {
       await callback(db);
     });
 
-    const response = await request(app).get('/api/reports/agent-performance/call-duration-by-date-range?startDate=2023-01-01&endDate=2023-01-31'); // Send a GET request to the call-duration-by-date-range endpoint
+    const response = await request(app).get(
+      '/api/reports/agent-performance/performance-by-region-supervisor?region=Australia&supervisorId=650c1f1e1c9d440000a1b1c3'
+    );
 
-    expect(response.status).toBe(200); // Expect a 200 status code
-
-    // Expect the response body to match the expected data
+    expect(response.status).toBe(200);
     expect(response.body).toEqual([
       {
-        agents: ['Agent A', 'Agent B'],
-        callDurations: [120, 90]
+        agent: 'Olivia Garcia',
+        callDuration: 350,
+        resolutionTime: 130
       }
     ]);
   });
 
-  // Test the call-duration-by-date-range endpoint with missing parameters
-  it('should return 400 if startDate or endDate is missing', async () => {
-    const response = await request(app).get('/api/reports/agent-performance/call-duration-by-date-range?startDate=2023-01-01'); // Send a GET request to the call-duration-by-date-range endpoint with missing endDate
-    expect(response.status).toBe(400); // Expect a 400 status code
+  // Test 2: Missing parameters validation (400 Bad Request)
+  it('should return 400 if region or supervisorId is missing', async () => {
+    const response = await request(app).get(
+      '/api/reports/agent-performance/performance-by-region-supervisor?region=Australia'
+    );
 
-    // Expect the response body to match the expected data
+    expect(response.status).toBe(400);
     expect(response.body).toEqual({
-      message: 'Start date and end date are required',
+      message: 'Region and supervisor ID are required',
       status: 400,
       type: 'error'
     });
   });
 
-  // Test the call-duration-by-date-range endpoint with an invalid date range
-  it('should return 404 for an invalid endpoint', async () => {
-    const response = await request(app).get('/api/reports/agent-performance/invalid-endpoint'); // Send a GET request to an invalid endpoint
-    expect(response.status).toBe(404); // Expect a 404 status code
-    // Expect the response body to match the expected data
+  // Test 3: Invalid endpoint check (404 Not Found)
+  it('should return 404 for an invalid agent-performance endpoint', async () => {
+    const response = await request(app).get(
+      '/api/reports/agent-performance/invalid-route-m97'
+    );
+
+    expect(response.status).toBe(404);
     expect(response.body).toEqual({
       message: 'Not Found',
       status: 404,
       type: 'error'
     });
   });
-});

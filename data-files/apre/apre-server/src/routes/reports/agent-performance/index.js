@@ -1,51 +1,40 @@
 /**
- * Author: Professor Krasso
- * Date: 8/14/24
- * File: index.js
- * Description: Apre agent performance API for the agent performance reports
+ * ============================================================================
+ * JENNIFER SNYDER SPRINT 2 MAJOR DEVELOPMENT TASK — TASK M-097
+ * ============================================================================@description
+ * GET /performance-by-region-supervisor
+ *
+ * Fetches agent performance data filtered by region and supervisor ID.
+ * Built for Sprint 2 Major Task M-097 ("Create an API to fetch agent performance
+ * data by region and supervisor and build an Angular component to display it").
+ *
+ * Why this was added:
+ * Allows the frontend to query specific agent performance metrics dynamically
+ * based on selected region and supervisor filters instead of fetching all records.
+ * ============================================================================
  */
-
-'use strict';
-
-const express = require('express');
-const { mongo } = require('../../../utils/mongo');
-const createError = require('http-errors');
-
-const router = express.Router();
-
-/**
- * @description
- *
- * GET /call-duration-by-date-range
- *
- * Fetches call duration data for agents within a specified date range.
- *
- * Example:
- * fetch('/call-duration-by-date-range?startDate=2023-01-01&endDate=2023-01-31')
- *  .then(response => response.json())
- *  .then(data => console.log(data));
- */
-router.get('/call-duration-by-date-range', (req, res, next) => {
+router.get('/performance-by-region-supervisor', (req, res, next) => {
   try {
-    const { startDate, endDate } = req.query;
+    // Extract region and supervisorId from the incoming query parameters
+    const { region, supervisorId } = req.query;
 
-    if (!startDate || !endDate) {
-      return next(createError(400, 'Start date and end date are required'));
+    // Validate inputs: Return a 400 Bad Request error if either parameter is missing
+    if (!region || !supervisorId) {
+      return next(createError(400, 'Region and supervisor ID are required'));
     }
 
-    console.log('Fetching call duration report for date range:', startDate, endDate);
-
+    // Open connection to MongoDB Atlas using the shared mongo helper utility
     mongo(async db => {
       const data = await db.collection('agentPerformance').aggregate([
         {
+          // Step 1: Filter documents matching the requested region and supervisor ID
           $match: {
-            date: {
-              $gte: new Date(startDate),
-              $lte: new Date(endDate)
-            }
+            region: region,
+            supervisorId: new ObjectId(supervisorId)
           }
         },
         {
+          // Step 2: Join the 'agents' collection to pull in agent names using agentId
           $lookup: {
             from: 'agents',
             localField: 'agentId',
@@ -54,43 +43,37 @@ router.get('/call-duration-by-date-range', (req, res, next) => {
           }
         },
         {
+          // Step 3: Flatten the joined agentDetails array into an object
           $unwind: '$agentDetails'
         },
         {
+          // Step 4: Group records by agent name and calculate metrics
           $group: {
             _id: '$agentDetails.name',
-            totalCallDuration: { $sum: '$callDuration' }
+            totalCallDuration: { $sum: '$callDuration' },
+            avgResolutionTime: { $avg: '$resolutionTime' }
           }
         },
         {
+          // Step 5: Reshape output fields and remove the default MongoDB _id
           $project: {
             _id: 0,
             agent: '$_id',
-            callDuration: '$totalCallDuration'
+            callDuration: '$totalCallDuration',
+            resolutionTime: '$avgResolutionTime'
           }
         },
         {
-          $group: {
-            _id: null,
-            agents: { $push: '$agent' },
-            callDurations: { $push: '$callDuration' }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            agents: 1,
-            callDurations: 1
-          }
+          // Step 6: Sort results alphabetically by agent name for clean UI display
+          $sort: { agent: 1 }
         }
       ]).toArray();
 
+      // Send the aggregated data back to the Angular client as JSON
       res.send(data);
     }, next);
   } catch (err) {
-    console.error('Error in /call-duration-by-date-range', err);
+    console.error('Error in /performance-by-region-supervisor:', err);
     next(err);
   }
 });
-
-module.exports = router;
