@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { User } from '../user.interface';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { environment} from '../../../../environments/environment';
 import { ReactiveFormsModule } from '@angular/forms';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -10,7 +10,7 @@ import { CommonModule } from '@angular/common';
 @Component({
   selector: 'app-user-details',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, RouterLink],
+  imports: [ReactiveFormsModule, CommonModule],
   template: `
     <div>
       <h1>User Details</h1>
@@ -42,11 +42,13 @@ import { CommonModule } from '@angular/common';
         </div>
 
         <div class="form__actions">
-          <input type="submit" class="button button--primary" value="Submit">
+          <!-- Task M-050: Replaced the bottom Return link with a Cancel button to keep form actions together -->
+          <button type="submit" class="button button--primary">Save</button>
+          <button type="button" class="button button--secondary" (click)="cancelEdit()">Cancel</button>
         </div>
+
       </form>
-      <br />
-      <a class="link link--secondary" routerLink="/user-management/users">Return</a>
+
     </div>
   `,
   styles: ``
@@ -106,5 +108,10 @@ export class UserDetailsComponent {
     } else {
       this.errorMessage = 'Please fill in all required fields.';
     }
+  }
+
+// Task M-050: Route back to the user management table when the user clicks Cancel
+  cancelEdit() {
+    this.router.navigate(['/user-management/users']);
   }
 }
