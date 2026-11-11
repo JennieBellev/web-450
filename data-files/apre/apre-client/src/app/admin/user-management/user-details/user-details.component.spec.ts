@@ -109,7 +109,6 @@ describe('UserDetailsComponent', () => {
 
     // Verify that the errorMessage is set
     expect(component.errorMessage).toBe('Please fill in all required fields.');
-  });
 
 // Task M-050: Check that cancelEdit routes back to the user management list
   it('should navigate to /user-management/users when cancelEdit is called', () => {
