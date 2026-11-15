@@ -1,6 +1,6 @@
 # IDE extensions
 .vscode
-*/*/.vscode 
+*/*/.vscode
 .vscode/*
 .idea/*
 *.iml
@@ -10,5 +10,5 @@ node_module
 .node_repl_history
 
 # macOS
-.DS_Store
 */.DS_Store
+apre-assignment-2.3.zip

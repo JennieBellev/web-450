@@ -16,6 +16,49 @@ const router = express.Router();
 /**
  * @description
  *
+ * GET /by-customer?customer=Jane%20Doe
+ *
+ * Task M-112: Fetches the columns needed by the customer feedback table for
+ * the requested customer, with the newest feedback first.
+ */
+router.get('/by-customer', (req, res, next) => {
+  try {
+    const customer = req.query.customer;
+
+    if (typeof customer !== 'string' || !customer.trim()) {
+      return next(createError(400, 'customer is required'));
+    }
+
+    mongo(async db => {
+      const data = await db.collection('customerFeedback').aggregate([
+        { $match: { customer: customer.trim() } },
+        {
+          $project: {
+            _id: 0,
+            customer: 1,
+            date: 1,
+            channel: 1,
+            rating: 1,
+            feedbackType: 1,
+            sentiment: 1,
+            text: 1,
+            status: 1
+          }
+        },
+        { $sort: { date: -1 } }
+      ]).toArray();
+
+      res.send(data);
+    }, next);
+  } catch (err) {
+    console.error('Error fetching customer feedback by customer:', err);
+    next(err);
+  }
+});
+
+/**
+ * @description
+ *
  * GET /channel-rating-by-month
  *
  * Fetches average customer feedback ratings by channel for a specified month.

@@ -315,7 +315,9 @@ export class MainLayoutComponent {
     // Add more reports as needed
   ];
 
+  // Task M-112: Add the new customer-specific report to the feedback navigation.
   customerFeedbackReports = [
+    { name: 'Feedback by Customer', url: '/reports/customer-feedback/by-customer' },
     { name: 'Channel Rating by Month', url: '/reports/customer-feedback/channel-rating-by-month' }
     // Add more reports as needed
   ];

@@ -7,15 +7,86 @@
 
 // Require the modules
 const request = require('supertest');
-const app = require('../../../../src/app');
+const express = require('express');
 const { mongo } = require('../../../../src/utils/mongo');
+const customerFeedbackRouter = require('../../../../src/routes/reports/customer-feedback');
+const { notFoundHandler, errorHandler } = require('../../../../src/utils/error-handler');
 
 jest.mock('../../../../src/utils/mongo');
+
+const app = express();
+app.use('/api/reports/customer-feedback', customerFeedbackRouter);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // Test the customer feedback API
 describe('Apre Customer Feedback API', () => {
   beforeEach(() => {
     mongo.mockClear();
+  });
+
+  it('should fetch customer feedback records for the specified customer', async () => {
+    const feedback = [
+      {
+        customer: 'Jane Doe',
+        date: '2024-01-15',
+        channel: 'Email',
+        rating: 5,
+        feedbackType: 'Positive',
+        sentiment: 'Positive',
+        text: 'Helpful service',
+        status: 'Resolved'
+      }
+    ];
+    let pipeline;
+
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn((query) => {
+          pipeline = query;
+          return { toArray: jest.fn().mockResolvedValue(feedback) };
+        })
+      };
+      await callback(db);
+    });
+
+    const response = await request(app)
+      .get('/api/reports/customer-feedback/by-customer?customer=Jane%20Doe');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(feedback);
+    expect(pipeline[0]).toEqual({ $match: { customer: 'Jane Doe' } });
+  });
+
+  it('should return 400 when the customer parameter is missing', async () => {
+    const response = await request(app)
+      .get('/api/reports/customer-feedback/by-customer');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      message: 'customer is required',
+      status: 400,
+      type: 'error'
+    });
+  });
+
+  it('should return an empty list when the customer has no feedback', async () => {
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        aggregate: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        })
+      };
+      await callback(db);
+    });
+
+    const response = await request(app)
+      .get('/api/reports/customer-feedback/by-customer?customer=Unknown');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
   });
 
   // Test the channel-rating-by-month endpoint
